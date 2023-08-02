@@ -1,6 +1,7 @@
 html,body{
-    margin: 0px;
-    height: 100%;
+    margin: 0;
+    padding: 0;
+    height: 80%;
     background-color: #2f4f30;
     color: white;
 }
@@ -16,13 +17,13 @@ html,body{
 
 .carta{
     position: relative;
-    max-width: 150px;
+    max-width: 110px;
     left: 100px;
     margin-left: -75px;
 }
 
 #computadora-cartas, #jugador-cartas{
-    height: 200px;
+    height: 160px;
 }
 
 #mensaje{
