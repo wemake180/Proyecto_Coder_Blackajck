@@ -2,8 +2,19 @@ html,body{
     margin: 0;
     padding: 0;
     height: 80%;
-    background-color: #2f4f30;
+    background-image: url('../background/mesa_blackjack.jpg');
+    background-size: cover;
     color: white;
+}
+
+.btn-custom{
+    background-color: black;
+    color: white;
+}
+
+.btn-custom:hover{
+    background-color: white;
+    color: black;
 }
 
 .titulo{
