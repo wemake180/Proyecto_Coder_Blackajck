@@ -3,82 +3,52 @@
 (() => {
     'use strict'
 
-    let baraja       = [''];
-    const tipos      = ['C','D','H','S'],
-          especiales = ['A','J','Q','K'];
+    const tipos = ['C', 'D', 'H', 'S'],
+        especiales = ['A', 'J', 'Q', 'K'];
 
-    //let puntosJugador = 0;
-   // let puntosComputadora = 0;
-    let puntosJugadores = [];
+    let baraja = [],
+        puntosJugadores = [];
 
-    //Referencias del html
     const btnPedir = document.querySelector('#btnPedir'),
-          btnDetener = document.querySelector('#btnDetener'),
-          btnNuevo = document.querySelector('#btnNuevo');
+        btnDetener = document.querySelector('#btnDetener'),
+        btnNuevo = document.querySelector('#btnNuevo');
 
     const divCartasJugadores = document.querySelectorAll('.divCartas'),
-          puntosHTML = document.querySelectorAll('small'),
-          mensaje = document.querySelector('#mensaje');
+        puntosHTML = document.querySelectorAll('small'),
+        mensaje = document.querySelector('#mensaje');
 
-    //Inicializar el juego
-    const inicializarJuego = ( numJugadores = 2 ) => {
+    const inicializarJuego = (numJugadores = 2) => {
         baraja = crearBaraja();
-        puntosJugadores = [];
-        for( let i = 0; i< numJugadores; i++ ) {
-            puntosJugadores.push(0);
-        }    
-
-        puntosHTML.forEach(elem => elem.innerText = 0); //Reinicia los puntos de los jugadores
-        divCartasJugadores.forEach(elem => elem.innerHTML = ''); //Borra las cartas
-      
+        puntosJugadores = Array(numJugadores).fill(0);
+        puntosHTML.forEach(elem => elem.innerText = 0);
+        divCartasJugadores.forEach(elem => elem.innerHTML = '');
         btnPedir.disabled = false;
         btnDetener.disabled = false;
-
-        mensaje.innerText = ('');
+        mensaje.innerText = '';
     }
 
-    //Creando nueva baraja
     const crearBaraja = () => {
-        baraja = [];
-        for (let i = 2; i <= 10; i++ ){
-            for(let tipo of tipos){
-                baraja.push(i + tipo);
-            } 
+        const baraja = [];
+        for (let i = 2; i <= 10; i++) {
+            tipos.forEach(tipo => baraja.push(i + tipo));
         }
-        for (let tipo of tipos){
-            for(let esp of especiales){
-                baraja.push(esp + tipo);
-            }
-        }
-        return _.shuffle( baraja );  
+        tipos.forEach(tipo => especiales.forEach(esp => baraja.push(esp + tipo)));
+        return _.shuffle(baraja);
     }
-    
-    //Tomando a carta 
-    const pedirCarta = () => {
 
-        if (baraja.length === 0) {
-            throw 'La baraja está vacía. No se puede pedir más cartas.';
-        }
+    const pedirCarta = () => {
+        if (!baraja.length) throw 'La baraja está vacía. No se puede pedir más cartas.';
         return baraja.shift();
     }
 
-    const valorCarta = (carta) => {
-
-        const valor = carta.substring(0, carta.length -1);
-        let puntos = 0;
-        if( isNaN( valor )){
-            puntos = (valor === 'A') ? 11 : 10;
-        }else{
-            puntos = (valor * 1);
-        }
-        return puntos;
+    const valorCarta = carta => {
+        const valor = carta.slice(0, -1);
+        return isNaN(valor) ? (valor === 'A' ? 11 : 10) : parseInt(valor);
     }
 
-    //Turno 0 = Primer Jugador y el ultimo siempre sera la computadora
-    const acumularPuntos = ( carta, turno ) =>{
-        puntosJugadores[turno] = puntosJugadores[turno] + valorCarta(carta);
+    const acumularPuntos = (carta, turno) => {
+        puntosJugadores[turno] += valorCarta(carta);
         puntosHTML[turno].innerText = puntosJugadores[turno];
-
         return puntosJugadores[turno];
     }
 
@@ -89,65 +59,51 @@
         divCartasJugadores[turno].append(imgCarta);
     }
 
-    //Turno de la computadora
-    const turnoComputadora = (puntosMinimos) => {
+    function esperar(milisegundos) {
+        return new Promise(resolve => setTimeout(resolve, milisegundos));
+    }
 
-        const intervalo = 700; // Intervalo de tiempo en milisegundos (1000 = 1 segundo)
-        let puntosComputadora = 0;
-        const realizarTurno = () => {
+    const turnoComputadora = async puntosMinimos => {
+        try {
+            const intervalo = 700;
+            const realizarTurno = async () => {
+                const carta = pedirCarta();
+                const puntosComputadora = acumularPuntos(carta, puntosJugadores.length - 1);
+                crearCarta(carta, puntosJugadores.length - 1);
 
-        const carta = pedirCarta();
-        puntosComputadora = acumularPuntos(carta, puntosJugadores.length -1);
-        crearCarta(carta, puntosJugadores.length -1);
-        
-        if (puntosMinimos > 21) {
-            generarMensajes(puntosMinimos, puntosComputadora);
-            return;
+                if (puntosMinimos > 21 || puntosComputadora > puntosMinimos) {
+                    generarMensajes(puntosMinimos, puntosComputadora);
+                    return;
+                }
+                await esperar(intervalo);
+                await realizarTurno();
+            };
+            await realizarTurno();
+        } catch (error) {
+            console.error("Error durante el turno de la computadora:", error);
         }
-        if (puntosComputadora <= puntosMinimos && puntosMinimos <= 21) {
-            setTimeout(realizarTurno, intervalo);
-        } else {
-                
-            generarMensajes(puntosMinimos, puntosComputadora);
-        }    
-        };   
-        realizarTurno();
-    };       
+    }
 
-    //Eventos
     btnPedir.addEventListener('click', () => {
-
         const carta = pedirCarta();
         const puntosJugador = acumularPuntos(carta, 0);
-
         crearCarta(carta, 0);
 
-        if(puntosJugador > 21){
-            btnPedir.disabled = true;
-            btnDetener.disabled = true;
-            turnoComputadora(puntosJugador);
-         
-        }else if(puntosJugador === 21){
+        if (puntosJugador >= 21) {
             btnPedir.disabled = true;
             btnDetener.disabled = true;
             turnoComputadora(puntosJugador);
         }
     });
 
-
-    //Detener
     btnDetener.addEventListener('click', () => {
-        const carta = pedirCarta();
-        turnoComputadora(puntosJugadores[0]);
         btnPedir.disabled = true;
         btnDetener.disabled = true;
+        turnoComputadora(puntosJugadores[0]);
     })
 
-
-    //Nuevo Juego
     btnNuevo.addEventListener('click', () => {
-        console.clear();
-        inicializarJuego()
+        inicializarJuego();
         mensaje.classList.remove('background');
     });
 
@@ -160,23 +116,23 @@
 
 
         if (puntosComputadora === puntosMinimos) {
-        empateCount++;
-        sessionStorage.setItem('empateCount', empateCount);
-        mensaje.innerText = (`EMPATE!! \n Computadora: ${perdisteCount} Jugador: ${ganasteCount}`);
-        mensaje.classList.add('background');
+            empateCount++;
+            sessionStorage.setItem('empateCount', empateCount);
+            mensaje.innerText = (`EMPATE!! \n Computadora: ${perdisteCount} Jugador: ${ganasteCount}`);
+            mensaje.classList.add('background');
 
         }else if (puntosMinimos > 21) {
-        perdisteCount++;
-        sessionStorage.setItem('perdisteCount', perdisteCount);
-        mensaje.innerText = (`PERDISTE!! :( \n Computadora: ${perdisteCount} Jugador: ${ganasteCount} `);
-        mensaje.classList.add('background');
+            perdisteCount++;
+            sessionStorage.setItem('perdisteCount', perdisteCount);
+            mensaje.innerText = (`PERDISTE!! :( \n Computadora: ${perdisteCount} Jugador: ${ganasteCount} `);
+            mensaje.classList.add('background');
 
 
         }else if (puntosComputadora > 21 || puntosMinimos === 21){
-        ganasteCount++;
-        sessionStorage.setItem('ganasteCount', ganasteCount);
-        mensaje.innerText = (`¡¡GANASTE¡¡ :) \n Computadora: ${perdisteCount} Jugador: ${ganasteCount}`);
-        mensaje.classList.add('background');
+            ganasteCount++;
+            sessionStorage.setItem('ganasteCount', ganasteCount);
+            mensaje.innerText = (`¡¡GANASTE¡¡ :) \n Computadora: ${perdisteCount} Jugador: ${ganasteCount}`);
+            mensaje.classList.add('background');
 
 
         }else{
